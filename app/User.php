@@ -36,4 +36,12 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Linked Social Accounts
+     */
+    public function accounts()
+    {
+        return $this->hasMany(LinkedSocialAccount::class);
+    }
 }
