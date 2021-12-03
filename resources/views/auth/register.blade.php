@@ -68,6 +68,10 @@
                                 </button>
                             </div>
                         </div>
+
+                        {{-- <a href="/login/facebook" class="btn btn-default">Facebookでログイン</a> --}}
+                        <a href="/login/google"   class="btn btn-default">Googleでログイン</a>
+                        <a href="/login/line"   class="btn btn-default">LINEでログイン</a>
                     </form>
                 </div>
             </div>
