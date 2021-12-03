@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6e4a9dd2476552506dba12be3b05aeec",
+    "content-hash": "0029ec6f96be08aeef41a7c7e9a38cef",
     "packages": [
         {
             "name": "doctrine/inflector",
@@ -6425,6 +6425,53 @@
                 }
             ],
             "time": "2020-09-28T06:39:44+00:00"
+        },
+        {
+            "name": "shibuyakosuke/laravel-language-setting",
+            "version": "1.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ShibuyaKosuke/laravel-language-setting.git",
+                "reference": "40d1b9a85de87e023aa8ded73f62364d9046cb5a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ShibuyaKosuke/laravel-language-setting/zipball/40d1b9a85de87e023aa8ded73f62364d9046cb5a",
+                "reference": "40d1b9a85de87e023aa8ded73f62364d9046cb5a",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^6.20.12|^7.30.4|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "ShibuyaKosuke\\LaravelLanguageSetting\\Providers\\CommandServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "ShibuyaKosuke\\LaravelLanguageSetting\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "ShibuyaKosuke",
+                    "email": "shibuya@imagenious.co.jp"
+                }
+            ],
+            "description": "Translate files generator for laravel",
+            "support": {
+                "issues": "https://github.com/ShibuyaKosuke/laravel-language-setting/issues",
+                "source": "https://github.com/ShibuyaKosuke/laravel-language-setting/tree/1.1.2"
+            },
+            "time": "2021-04-30T18:07:51+00:00"
         },
         {
             "name": "theseer/tokenizer",
