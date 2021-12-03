@@ -165,6 +165,7 @@ return [
         /*
          * Package Service Providers...
          */
+        SocialiteProviders\Manager\ServiceProvider::class, // ここを追記
 
         /*
          * Application Service Providers...
