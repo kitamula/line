@@ -21,8 +21,11 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(\Illuminate\Routing\UrlGenerator $url)
     {
-        //
+        if(config('app.env') === 'ngrok')
+        {
+            $url->forceScheme('https');
+        }
     }
 }
