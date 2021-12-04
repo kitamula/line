@@ -42,4 +42,30 @@ class LineMessengerController extends Controller
         $reply = $bot->replyText($reply_token, $reply_message);
 
     }
+
+    /**
+     * LINEメッセージ送信
+     *
+     * 友達追加されている必要がある
+     */
+    public function message() {
+
+        // LINEBOTSDKの設定
+        $http_client = new CurlHTTPClient(config('services.line.channel_token'));
+        $bot = new LINEBot($http_client, ['channelSecret' => config('services.line.messenger_secret')]);
+
+        // メッセージ設定
+        $message = "こんにちは！";
+
+        // LINEユーザーID指定
+        $lineAccount = User::find(2)->accounts()->where('provider_name', 'line')->first();
+        if ($lineAccount) {
+
+            // メッセージ送信
+            $textMessageBuilder = new TextMessageBuilder($message);
+            $response    = $bot->pushMessage($lineAccount->provider_id, $textMessageBuilder);
+        }
+
+
+    }
 }
