@@ -1,45 +1,119 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\LineFriend;
 use LINE\LINEBot\HTTPClient\CurlHTTPClient;
 use LINE\LINEBot;
 use App\User;
 use LINE\LINEBot\MessageBuilder\TextMessageBuilder;
+use LINE\LINEBot\Event\FollowEvent;
+use LINE\LINEBot\Event\UnfollowEvent;
+use LINE\LINEBot\Event\MessageEvent;
+use LINE\LINEBot\Event\PostbackEvent;
+
 use Illuminate\Http\Request;
 
 use LINE\LINEBot\MessageBuilder\MultiMessageBuilder;
 
 class LineMessengerController extends Controller
 {
+    public function __construct()
+    {
+        $this->http_client = new CurlHTTPClient(config('services.line.channel_token'));
+        $this->bot = new LINEBot($this->http_client, ['channelSecret' => config('services.line.messenger_secret')]);
+    }
+
     public function webhook(Request $request) {
         // LINEから送られた内容を$inputsに代入
-        $inputs = $request->all();
+        $request_body = $request->getContent();
+        $hash = hash_hmac('sha256', $request_body, config('services.line.messenger_secret'), true);
+        $signature = base64_encode($hash);
 
-        $events = $inputs['events'];
-        foreach ($events as $event) {
-            $message_type = $event['type'];
-            if($message_type == 'message') {
-                $this->reply($event);
+        // LINEからの送信
+        if($signature === $request->header('X-Line-Signature')) {
+            $events = $this->bot->parseEventRequest($request_body, $signature);
+
+            foreach ($events as $event) {
+                $line_id = $event->getEventSourceId();
+                $profile = $this->bot->getProfile($line_id)->getJSONDecodedBody();
+                $lineFriend = LineFriend::findByProviderId($line_id);
+                $user = null;
+                if ($lineFriend->linkedSocialAccount && $lineFriend->linkedSocialAccount->user) {
+                    $user = $lineFriend->linkedSocialAccount->user;
+                }
+
+                /**
+                 * 入力コンテンツごとに処理
+                 * + 友達追加
+                 * + テキストメッセージ受信
+                 * + 位置情報の受信
+                 * + 選択オプション受信
+                 * + ブロック
+                 */
+                switch (TRUE) {
+                    // 友達追加
+                    case $event instanceof FollowEvent:
+                        if (!$lineFriend) {
+                            $lineFriend = LineFriend::insert(['provider_id'=>$line_id, 'name'=>$profile['displayName']]);
+                        }
+
+                        try {
+                            $user = $lineFriend->linkedSocialAccount->user;
+                            $replyMessage = $user->created_at.'に登録したな？';
+                            $this->reply($event, $replyMessage);
+                        } catch (\Throwable $th) {
+                            $replyMessage = '会員登録もよろしくな';
+                            $this->reply($event, $replyMessage);
+                        }
+
+                        break;
+
+                    // テキストメッセージ受信
+                    case $event instanceof MessageEvent\TextMessage:
+                        $text = $event->getText();
+                        $replyMessage = $text.'と言いましたね？';
+
+                        $this->reply($event, $replyMessage);
+                        break;
+
+                    //位置情報の受信
+                    case $event instanceof MessageEvent\LocationMessage:
+                        /**
+                         * $event->getTitle()
+                         * $event->getAddress()
+                         * $event->getLatitude()
+                         * $event->getLongitude()
+                         */
+
+                        $replyMessage = $event->getAddress().'ね？';
+                        $this->reply($event, $replyMessage);
+
+                        // $service = new RecieveLocationService($bot);
+                        // $reply_message = $service->execute($event);
+                        break;
+
+                    //選択オプション受信
+                    case $event instanceof PostbackEvent:
+                        break;
+
+                    //ブロック
+                    case $event instanceof UnfollowEvent:
+                        break;
+
+                    default:
+                        break;
+                }
             }
         }
 
         return 'ok';
     }
 
-    public function reply($event)
+    public function reply($event, $replyMessage)
     {
-        $reply_token = $event['replyToken'];
-        $message = $event['message']['text'];
-
-        // LINEBOTSDKの設定
-        $http_client = new CurlHTTPClient(config('services.line.channel_token'));
-        $bot = new LINEBot($http_client, ['channelSecret' => config('services.line.messenger_secret')]);
-
-        // 送信するメッセージの設定
-        $reply_message = 'メッセージありがとうございます'.$message;
-
         // ユーザーにメッセージを返す
-        $reply = $bot->replyText($reply_token, $reply_message);
+        $reply = $this->bot->replyText($event->getReplyToken(), $replyMessage);
 
     }
 
@@ -48,12 +122,8 @@ class LineMessengerController extends Controller
      *
      * 友達追加されている必要がある
      */
-    public function message() {
-
-        // LINEBOTSDKの設定
-        $http_client = new CurlHTTPClient(config('services.line.channel_token'));
-        $bot = new LINEBot($http_client, ['channelSecret' => config('services.line.messenger_secret')]);
-
+    public function message()
+    {
         // メッセージ設定
         $message = "こんにちは！";
 
@@ -63,9 +133,7 @@ class LineMessengerController extends Controller
 
             // メッセージ送信
             $textMessageBuilder = new TextMessageBuilder($message);
-            $response    = $bot->pushMessage($lineAccount->provider_id, $textMessageBuilder);
+            $response    = $this->bot->pushMessage($lineAccount->provider_id, $textMessageBuilder);
         }
-
-
     }
 }
