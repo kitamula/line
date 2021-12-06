@@ -12,6 +12,7 @@
         "doctrine/dbal": "^2.6",
         "encore/laravel-admin": "^1.8",
         "fideloper/proxy": "^4.4",
+        "intervention/image": "^2.7",
         "laravel-admin-ext/grid-sortable": "^1.1",
         "laravel/framework": "^6.20.26",
         "laravel/socialite": "^5.2",
