@@ -7,11 +7,15 @@ use LINE\LINEBot\HTTPClient\CurlHTTPClient;
 use LINE\LINEBot;
 use App\User;
 use LINE\LINEBot\MessageBuilder\TextMessageBuilder;
+use LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder;
+use LINE\LINEBot\ImagemapActionBuilder\AreaBuilder;
+use LINE\LINEBot\ImagemapActionBuilder\ImagemapUriActionBuilder;
+use LINE\LINEBot\MessageBuilder\ImagemapMessageBuilder;
 use LINE\LINEBot\Event\FollowEvent;
 use LINE\LINEBot\Event\UnfollowEvent;
 use LINE\LINEBot\Event\MessageEvent;
 use LINE\LINEBot\Event\PostbackEvent;
-
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 use LINE\LINEBot\MessageBuilder\MultiMessageBuilder;
@@ -74,6 +78,10 @@ class LineMessengerController extends Controller
                         $text = $event->getText();
                         $replyMessage = $text.'と言いましたね？';
 
+                        $imagePath = asset('image/line/welcome').'/';
+                        $linkUrl = route('home');
+
+                        $this->image($event, $imagePath, $linkUrl);
                         $this->reply($event, $replyMessage);
                         break;
 
@@ -115,6 +123,24 @@ class LineMessengerController extends Controller
         // ユーザーにメッセージを返す
         $reply = $this->bot->replyText($event->getReplyToken(), $replyMessage);
 
+    }
+
+    public function image($event, $path, $linkUrl = null, $alt = 'image', $width = 1040, $height = 1040, $x = 0, $y = 0)
+    {
+        $baseSize = new BaseSizeBuilder($height, $width); // 基本画像のサイズ
+        $area = new AreaBuilder($x, $y, $width, $height);
+        $imageMapActions = [ new ImagemapUriActionBuilder($linkUrl, $area)];
+        $messageBuilder = new MultiMessageBuilder();
+
+        $image_map_message = new ImagemapMessageBuilder(
+            $path,
+            $alt,
+            $baseSize,
+            $imageMapActions
+        );
+        $messageBuilder->Add($image_map_message);
+
+        $reply = $this->bot->replyMessage($event->getReplyToken(), $messageBuilder);
     }
 
     /**
