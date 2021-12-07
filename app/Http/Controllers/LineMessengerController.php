@@ -3,20 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\LineFriend;
-use LINE\LINEBot\HTTPClient\CurlHTTPClient;
-use LINE\LINEBot;
 use App\User;
-use LINE\LINEBot\MessageBuilder\TextMessageBuilder;
-use LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder;
-use LINE\LINEBot\ImagemapActionBuilder\AreaBuilder;
-use LINE\LINEBot\ImagemapActionBuilder\ImagemapUriActionBuilder;
-use LINE\LINEBot\MessageBuilder\ImagemapMessageBuilder;
+use Illuminate\Http\Request;
+use LINE\LINEBot;
 use LINE\LINEBot\Event\FollowEvent;
-use LINE\LINEBot\Event\UnfollowEvent;
 use LINE\LINEBot\Event\MessageEvent;
 use LINE\LINEBot\Event\PostbackEvent;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\Request;
+use LINE\LINEBot\Event\UnfollowEvent;
+use LINE\LINEBot\HTTPClient\CurlHTTPClient;
+use LINE\LINEBot\ImagemapActionBuilder\AreaBuilder;
+use LINE\LINEBot\ImagemapActionBuilder\ImagemapUriActionBuilder;
+use LINE\LINEBot\MessageBuilder\TextMessageBuilder;
+use LINE\LINEBot\MessageBuilder\ImagemapMessageBuilder;
+use LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder;
 
 use LINE\LINEBot\MessageBuilder\MultiMessageBuilder;
 
@@ -25,16 +24,17 @@ class LineMessengerController extends Controller
     public function __construct()
     {
         $this->http_client = new CurlHTTPClient(config('services.line.channel_token'));
-        $this->bot = new LINEBot($this->http_client, ['channelSecret' => config('services.line.messenger_secret')]);
+        $this->messenger_secret = config('services.line.messenger_secret');
+        $this->bot = new LINEBot($this->http_client, ['channelSecret' => $this->messenger_secret]);
     }
 
     public function webhook(Request $request) {
-        // LINEから送られた内容を$inputsに代入
+        // LINEから送られた内容を取得
         $request_body = $request->getContent();
-        $hash = hash_hmac('sha256', $request_body, config('services.line.messenger_secret'), true);
+        $hash = hash_hmac('sha256', $request_body, $this->messenger_secret, true);
         $signature = base64_encode($hash);
 
-        // LINEからの送信
+        // LINEからの送信であることを検証
         if($signature === $request->header('X-Line-Signature')) {
             $events = $this->bot->parseEventRequest($request_body, $signature);
 
@@ -64,10 +64,10 @@ class LineMessengerController extends Controller
 
                         try {
                             $user = $lineFriend->linkedSocialAccount->user;
-                            $replyMessage = $user->created_at.'に登録したな？';
+                            $replyMessage = $user->created_at."に、会員登録もお済みです";
                             $this->reply($event, $replyMessage);
                         } catch (\Throwable $th) {
-                            $replyMessage = '会員登録もよろしくな';
+                            $replyMessage = "会員登録もよろしくお願いします。\n".route('register');
                             $this->reply($event, $replyMessage);
                         }
 
@@ -76,13 +76,13 @@ class LineMessengerController extends Controller
                     // テキストメッセージ受信
                     case $event instanceof MessageEvent\TextMessage:
                         $text = $event->getText();
-                        $replyMessage = $text.'と言いましたね？';
+                        $replyMessage = $text.'ですね';
 
                         $imagePath = asset('image/line/welcome').'/';
                         $linkUrl = route('home');
 
-                        $this->image($event, $imagePath, $linkUrl);
                         $this->reply($event, $replyMessage);
+                        // $this->image($event, $imagePath, $linkUrl); //画像の送信
                         break;
 
                     //位置情報の受信
@@ -96,9 +96,6 @@ class LineMessengerController extends Controller
 
                         $replyMessage = $event->getAddress().'ね？';
                         $this->reply($event, $replyMessage);
-
-                        // $service = new RecieveLocationService($bot);
-                        // $reply_message = $service->execute($event);
                         break;
 
                     //選択オプション受信
@@ -153,7 +150,7 @@ class LineMessengerController extends Controller
         // メッセージ設定
         $message = "こんにちは！";
 
-        // LINEユーザーID指定
+        // LINEユーザーID指定（例）
         $lineAccount = User::find(2)->accounts()->where('provider_name', 'line')->first();
         if ($lineAccount) {
 
@@ -161,9 +158,9 @@ class LineMessengerController extends Controller
             $textMessageBuilder = new TextMessageBuilder($message);
 
             // 個別送信
-            $response    = $this->bot->pushMessage($lineAccount->provider_id, $textMessageBuilder);
+            $response = $this->bot->pushMessage($lineAccount->provider_id, $textMessageBuilder);
             // マルチ送信（ID指定）
-            $response    = $this->bot->multicast([$lineAccount->provider_id], $textMessageBuilder);
+            $response = $this->bot->multicast([$lineAccount->provider_id], $textMessageBuilder);
         }
     }
 }
