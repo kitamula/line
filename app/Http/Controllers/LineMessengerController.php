@@ -159,7 +159,11 @@ class LineMessengerController extends Controller
 
             // メッセージ送信
             $textMessageBuilder = new TextMessageBuilder($message);
+
+            // 個別送信
             $response    = $this->bot->pushMessage($lineAccount->provider_id, $textMessageBuilder);
+            // マルチ送信（ID指定）
+            $response    = $this->bot->multicast([$lineAccount->provider_id], $textMessageBuilder);
         }
     }
 }
