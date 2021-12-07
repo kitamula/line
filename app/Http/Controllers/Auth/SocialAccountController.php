@@ -9,7 +9,7 @@ class SocialAccountController extends Controller
 {
     public function redirectToProvider(string $provider)
     {
-        return \Socialite::driver($provider)->redirect();
+        return \Socialite::driver($provider)->with(['bot_prompt'=>'aggressive'])->redirect();
     }
 
     public function handleProviderCallback(\App\SocialAccountService $accountService, string $provider)
